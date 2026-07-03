@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Testformular Karte</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    max-width: 700px;
+    margin: 20px auto;
+    padding: 0 12px;
+  }
+  h1 {
+    font-size: 1.3em;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+  }
+  input[type="text"], input[type="number"], textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px;
+    font-size: 1em;
+    margin-top: 4px;
+  }
+  .koord-row {
+    display: flex;
+    gap: 10px;
+  }
+  .koord-row > div {
+    flex: 1;
+  }
+  button {
+    margin-top: 12px;
+    padding: 8px 14px;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  .map-box {
+    margin-top: 20px;
+  }
+  .map-box h2 {
+    font-size: 1.05em;
+    margin-bottom: 4px;
+  }
+  #osmMap {
+    height: 300px;
+    width: 100%;
+    border: 1px solid #ccc;
+  }
+  #googleMap {
+    height: 300px;
+    width: 100%;
+    border: 1px solid #ccc;
+  }
+  .hinweis {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Testformular – Kartenanbindung</h1>
+
+<label for="lat">Breitengrad (Latitude)</label>
+<div class="koord-row">
+  <div>
+    <input type="text" id="lat" placeholder="z. B. 52.520008">
+  </div>
+  <div>
+    <input type="text" id="lon" placeholder="z. B. 13.404954" title="Längengrad (Longitude)">
+  </div>
+</div>
+
+<button onclick="gpsAbrufen()">📍 GPS-Position abrufen</button>
+<button onclick="kartenAktualisieren()">Karten aktualisieren</button>
+
+<label for="bemerkung">Bemerkung</label>
+<textarea id="bemerkung" rows="3" placeholder="Freitext..."></textarea>
+
+<div class="map-box">
+  <h2>OpenStreetMap (Leaflet)</h2>
+  <div id="osmMap"></div>
+</div>
+
+<div class="map-box">
+  <h2>Google Maps (Embed, ohne API-Key)</h2>
+  <iframe id="googleMap" src="" loading="lazy"></iframe>
+  <div class="hinweis">Hinweis: Diese Embed-Variante benötigt keinen API-Key, hat aber eingeschränkte Funktionen (kein eigenes JS-API, kein individuelles Marker-Styling).</div>
+</div>
+
+<script>
+  // Startkoordinate (Berlin, als Platzhalter)
+  let startLat = 52.520008;
+  let startLon = 13.404954;
+
+  // Leaflet-Karte initialisieren
+  const map = L.map('osmMap').setView([startLat, startLon], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap-Mitwirkende'
+  }).addTo(map);
+  let marker = L.marker([startLat, startLon]).addTo(map);
+
+  function googleMapsUrl(lat, lon) {
+    return `https://www.google.com/maps?q=${lat},${lon}&z=17&output=embed`;
+  }
+
+  function kartenAktualisieren() {
+    const latVal = parseFloat(document.getElementById('lat').value);
+    const lonVal = parseFloat(document.getElementById('lon').value);
+
+    if (isNaN(latVal) || isNaN(lonVal)) {
+      alert('Bitte gültige Koordinaten eingeben.');
+      return;
+    }
+
+    // OSM aktualisieren
+    map.setView([latVal, lonVal], 16);
+    marker.setLatLng([latVal, lonVal]);
+
+    // Google Maps aktualisieren
+    document.getElementById('googleMap').src = googleMapsUrl(latVal, lonVal);
+  }
+
+  function gpsAbrufen() {
+    if (!navigator.geolocation) {
+      alert('Geolocation wird von diesem Browser nicht unterstützt.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        document.getElementById('lat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('lon').value = pos.coords.longitude.toFixed(6);
+        kartenAktualisieren();
+      },
+      (err) => {
+        alert('GPS-Position konnte nicht ermittelt werden: ' + err.message);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  // Initial mit Startkoordinate befüllen
+  document.getElementById('lat').value = startLat;
+  document.getElementById('lon').value = startLon;
+  document.getElementById('googleMap').src = googleMapsUrl(startLat, startLon);
+</script>
+
+</body>
+</html>
